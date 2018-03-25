@@ -5,6 +5,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using JPEG.Images;
 using Utilities;
 using PixelFormat = JPEG.Images.PixelFormat;
@@ -17,42 +18,41 @@ namespace JPEG
 
 		static void Main(string[] args)
 		{
-			try
-			{
-				var sw = Stopwatch.StartNew();
-				var fileName = @"..\..\sample.bmp";
-//				var fileName = "Big_Black_River_Railroad_Bridge.bmp";
-				var compressedFileName = fileName + ".compressed." + CompressionQuality;
-				var uncompressedFileName = fileName + ".uncompressed." + CompressionQuality + ".bmp";
-				
-				using (var fileStream = File.OpenRead(fileName))
-				using (var bmp = (Bitmap) Image.FromStream(fileStream, false, false))
-				{
-					var imageMatrix = (Matrix) bmp;
+		        try
+		        {
+		            var sw = Stopwatch.StartNew();
+		            var fileName = @"..\..\sample.bmp";
+		            var compressedFileName = fileName + ".compressed." + CompressionQuality;
+		            var uncompressedFileName = fileName + ".uncompressed." + CompressionQuality + ".bmp";
 
-					sw.Stop();
-					Console.WriteLine($"{bmp.Width}x{bmp.Height} - {fileStream.Length / (1024.0 * 1024):F2} MB");
-					sw.Start();
+		            using (var fileStream = File.OpenRead(fileName))
+		            using (var bmp = (Bitmap)Image.FromStream(fileStream, false, false))
+		            {
+		                var imageMatrix = (Matrix)bmp;
 
-					var compressionResult = Compress(imageMatrix, CompressionQuality);
-					compressionResult.Save(compressedFileName);
-				}
+		                sw.Stop();
+		                Console.WriteLine($"{bmp.Width}x{bmp.Height} - {fileStream.Length / (1024.0 * 1024):F2} MB");
+		                sw.Start();
 
-				sw.Stop();
-				Console.WriteLine("Compression: " + sw.Elapsed);
-				sw.Restart();
-				var compressedImage = CompressedImage.Load(compressedFileName);
-				var uncompressedImage = Uncompress(compressedImage);
-				var resultBmp = (Bitmap) uncompressedImage;
-				resultBmp.Save(uncompressedFileName, ImageFormat.Bmp);
-				Console.WriteLine("Decompression: " + sw.Elapsed);
-				Console.WriteLine($"Peak commit size: {MemoryMeter.PeakPrivateBytes() / (1024.0*1024):F2} MB");
-				Console.WriteLine($"Peak working set: {MemoryMeter.PeakWorkingSet() / (1024.0*1024):F2} MB");
-			}
-			catch(Exception e)
-			{
-				Console.WriteLine(e);
-			}
+		                var compressionResult = Compress(imageMatrix, CompressionQuality);
+		                compressionResult.Save(compressedFileName);
+		            }
+
+		            sw.Stop();
+		            Console.WriteLine("Compression: " + sw.Elapsed);
+		            sw.Restart();
+		            var compressedImage = CompressedImage.Load(compressedFileName);
+		            var uncompressedImage = Uncompress(compressedImage);
+		            var resultBmp = (Bitmap)uncompressedImage;
+		            resultBmp.Save(uncompressedFileName, ImageFormat.Bmp);
+		            Console.WriteLine("Decompression: " + sw.Elapsed);
+		            Console.WriteLine($"Peak commit size: {MemoryMeter.PeakPrivateBytes() / (1024.0 * 1024):F2} MB");
+		            Console.WriteLine($"Peak working set: {MemoryMeter.PeakWorkingSet() / (1024.0 * 1024):F2} MB");
+		        }
+		        catch (Exception e)
+		        {
+		            Console.WriteLine(e);
+		        }
 		}
 
 		private static CompressedImage Compress(Matrix matrix, int quality = 50)
@@ -88,8 +88,7 @@ namespace JPEG
 			using (var allQuantizedBytes =
 				new MemoryStream(HuffmanCodec.Decode(image.CompressedBytes, image.DecodeTable, image.BitsCount)))
 			{
-				var freqNum = 0;
-				for (var y = 0; y < image.Height; y += DCTSize)
+			    for (var y = 0; y < image.Height; y += DCTSize)
 				{
 					for (var x = 0; x < image.Width; x += DCTSize)
 					{
@@ -177,15 +176,11 @@ namespace JPEG
 			var result = new byte[channelFreqs.GetLength(0), channelFreqs.GetLength(1)];
 
 			var quantizationMatrix = GetQuantizationMatrix(quality);
-			for(int y = 0; y < channelFreqs.GetLength(0); y++)
-			{
-				for(int x = 0; x < channelFreqs.GetLength(1); x++)
-				{
-					result[y, x] = (byte)(channelFreqs[y, x] / quantizationMatrix[y, x]);
-				}
-			}
+		    for (int y = 0; y < channelFreqs.GetLength(0); y++)
+		    for (int x = 0; x < channelFreqs.GetLength(1); x++)
+		        result[y, x] = (byte) (channelFreqs[y, x] / quantizationMatrix[y, x]);
 
-			return result;
+		    return result;
 		}
 
 		private static double[,] DeQuantize(byte[,] quantizedBytes, int quality)
@@ -193,15 +188,13 @@ namespace JPEG
 			var result = new double[quantizedBytes.GetLength(0), quantizedBytes.GetLength(1)];
 			var quantizationMatrix = GetQuantizationMatrix(quality);
 
-			for(int y = 0; y < quantizedBytes.GetLength(0); y++)
-			{
-				for(int x = 0; x < quantizedBytes.GetLength(1); x++)
-				{
-					result[y, x] = ((sbyte)quantizedBytes[y, x]) * quantizationMatrix[y, x];//NOTE cast to sbyte not to loose negative numbers
-				}
-			}
+		    for (int y = 0; y < quantizedBytes.GetLength(0); y++)
+		    for (int x = 0; x < quantizedBytes.GetLength(1); x++)
+		        result[y, x] =
+		            ((sbyte) quantizedBytes[y, x]) *
+		            quantizationMatrix[y, x]; //NOTE cast to sbyte not to loose negative numbers
 
-			return result;
+		    return result;
 		}
 
 		private static int[,] GetQuantizationMatrix(int quality)
@@ -223,14 +216,11 @@ namespace JPEG
 				{72, 92, 95, 98, 112, 100, 103, 99}
 			};
 
-			for(int y = 0; y < result.GetLength(0); y++)
-			{
-				for(int x = 0; x < result.GetLength(1); x++)
-				{
-					result[y, x] = (multiplier * result[y, x] + 50) / 100;
-				}
-			}
-			return result;
+		    for (int y = 0; y < result.GetLength(0); y++)
+		    for (int x = 0; x < result.GetLength(1); x++)
+		        result[y, x] = (multiplier * result[y, x] + 50) / 100;
+
+            return result;
 		}
 
 		const int DCTSize = 8;

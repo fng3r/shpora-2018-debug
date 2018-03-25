@@ -95,7 +95,7 @@ namespace JPEG
 
 				sr.Read(buffer, 0, 4);
 				var compressedBytesCount = BitConverter.ToInt32(buffer, 0);
-
+                
 				result.CompressedBytes = new byte[compressedBytesCount];
 				var totalRead = 0;
 				while(totalRead < compressedBytesCount)

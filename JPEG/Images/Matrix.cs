@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using FastBitmapLib;
 
 namespace JPEG.Images
 {
@@ -14,9 +15,9 @@ namespace JPEG.Images
             Width = width;
 			
             Pixels = new Pixel[height,width];
-            for(var i = 0; i< height; ++i)
-            for(var j = 0; j< width; ++j)
-                Pixels[i, j] = new Pixel(0, 0, 0, PixelFormat.RGB);
+            //for(var i = 0; i< height; ++i)
+            //for(var j = 0; j< width; ++j)
+            //    Pixels[i, j] = new Pixel(0, 0, 0, PixelFormat.RGB);
         }
 
         public static explicit operator Matrix(Bitmap bmp)
@@ -25,7 +26,8 @@ namespace JPEG.Images
             var width = bmp.Width - bmp.Width % 8;
             var matrix = new Matrix(height, width);
 
-            for(var j = 0; j < height; j++)
+            //using (var fastBitmap = bmp.FastLock())
+                for (var j = 0; j < height; j++)
             {
                 for(var i = 0; i < width; i++)
                 {
@@ -39,14 +41,15 @@ namespace JPEG.Images
 
         public static explicit operator Bitmap(Matrix matrix)
         {
-            var bmp = new Bitmap(matrix.Width, matrix.Height);
+            var bmp = new Bitmap(matrix.Width, matrix.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-            for(var j = 0; j < bmp.Height; j++)
+            using (var fastBitmap = bmp.FastLock())
+                for (var j = 0; j < bmp.Height; j++)
             {
                 for(var i = 0; i < bmp.Width; i++)
                 {
                     var pixel = matrix.Pixels[j, i];
-                    bmp.SetPixel(i, j, Color.FromArgb(ToByte(pixel.R), ToByte(pixel.G), ToByte(pixel.B)));
+                    fastBitmap.SetPixel(i, j, Color.FromArgb(ToByte(pixel.R), ToByte(pixel.G), ToByte(pixel.B)));
                 }
             }
 
